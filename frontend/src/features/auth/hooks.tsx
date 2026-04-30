@@ -7,7 +7,7 @@ import { authApi } from './api'
 type AuthContextValue = {
   user: SessionUser | null
   isAuthenticated: boolean
-  login: (input: LoginRequest) => Promise<void>
+  login: (input: LoginRequest) => Promise<SessionUser>
   logout: () => Promise<void>
 }
 
@@ -21,6 +21,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     tokenStorage.set(response.token)
     sessionStorage.setUser(response.user)
     setUser(response.user)
+    return response.user
   }, [])
 
   const logout = useCallback(async () => {

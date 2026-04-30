@@ -6,3 +6,13 @@ export const createUserSchema = z.object({
   password: z.string().min(6),
   role: z.enum(['OWNER', 'ADMIN', 'CASHIER']),
 })
+
+export type CreateUserValues = z.infer<typeof createUserSchema>
+
+export const updateUserSchema = z.object({
+  name: z.string().min(2),
+  role: z.enum(['OWNER', 'ADMIN', 'CASHIER']),
+  active: z.boolean(),
+})
+
+export type UpdateUserValues = z.infer<typeof updateUserSchema>
