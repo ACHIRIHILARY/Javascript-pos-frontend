@@ -9,9 +9,9 @@ export function AppShell() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Topbar />
-      <div className="flex">
+      <div className="flex flex-col md:flex-row">
         <Sidebar role={user.role} />
-        <main className="flex-1 p-4">
+        <main className="flex-1 p-4 md:p-6">
           <Outlet />
         </main>
       </div>

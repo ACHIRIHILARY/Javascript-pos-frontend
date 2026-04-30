@@ -33,14 +33,17 @@ const navByRole: Record<Role, { to: string; label: string }[]> = {
 
 export function Sidebar({ role }: SidebarProps) {
   return (
-    <aside className="w-56 border-r border-slate-200 bg-white p-4">
-      <nav className="space-y-2">
+    <aside className="w-full border-b border-slate-200 bg-white p-3 md:w-56 md:border-b-0 md:border-r md:p-4">
+      <div className="mb-2 hidden text-xs font-semibold uppercase tracking-wide text-slate-500 md:block">
+        {role}
+      </div>
+      <nav className="flex gap-2 overflow-x-auto pb-1 md:block md:space-y-2 md:overflow-visible md:pb-0">
         {navByRole[role].map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `block rounded px-3 py-2 text-sm ${isActive ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'}`
+              `block whitespace-nowrap rounded px-3 py-2 text-sm ${isActive ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'}`
             }
           >
             {item.label}
