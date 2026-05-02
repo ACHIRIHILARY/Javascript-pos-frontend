@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useProducts, useCategories, useCreateProduct, useDeleteProduct, useAdjustProductStock, useCreateCategory } from '../features/products/hooks'
 import { formatCurrency } from '../lib/utils/currency'
 import { mapApiError } from '../lib/api/error'
-import type { Product, Category } from '../lib/types/domain'
+import { QRScannerModal } from '../components/QRScannerModal'
+import type { Product } from '../lib/types/domain'
 
 export function InventoryPage() {
-  const navigate = useNavigate()
   const { data: products, isLoading } = useProducts()
   const { data: categories } = useCategories()
   const createProduct = useCreateProduct()
@@ -35,6 +35,7 @@ export function InventoryPage() {
     lowStockThreshold: '10',
   })
   const [createProductError, setCreateProductError] = useState<string | null>(null)
+  const [showQRScanner, setShowQRScanner] = useState(false)
 
   const filteredProducts = useMemo(() => {
     if (!products) return []
@@ -67,6 +68,11 @@ export function InventoryPage() {
       setCreateProductError(errorMessage)
       console.error('Failed to create product:', error)
     }
+  }
+
+  const handleQRScan = (barcodeValue: string) => {
+    setFormData((prev) => ({ ...prev, barcode: barcodeValue }))
+    setShowQRScanner(false)
   }
 
   const handleDeleteProduct = async (id: string) => {
@@ -264,12 +270,25 @@ export function InventoryPage() {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">Barcode</label>
-                <input
-                  type="text"
-                  value={formData.barcode}
-                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.barcode}
+                    onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowQRScanner(true)
+                      setCreateProductError(null)
+                    }}
+                    className="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                  >
+                    Scan QR
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-slate-500">Scan a QR code from the product label or enter the barcode manually.</p>
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">Category *</label>
@@ -340,6 +359,15 @@ export function InventoryPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showQRScanner && (
+        <QRScannerModal
+          isOpen={showQRScanner}
+          onClose={() => setShowQRScanner(false)}
+          onScan={handleQRScan}
+          onError={(message) => setCreateProductError(message)}
+        />
       )}
 
       {/* Adjust Stock Modal */}
