@@ -58,13 +58,13 @@ const normalizeSaleItem = (value: unknown): SaleItem => {
 
 const normalizeSale = (value: unknown): Sale => {
   const item = toRecord(value)
-  const cashier = toRecord(item.cashier)
+  const cashier = toRecord(item.cashier ?? item.user)
   return {
     id: toString(item.id),
     total: toNumber(item.total),
     paymentMethod: toString(item.paymentMethod, 'CASH') as PaymentMethod,
     createdAt: toString(item.createdAt, new Date().toISOString()),
-    cashierId: toString(item.cashierId ?? cashier.id, ''),
+    cashierId: toString(item.cashierId ?? item.userId ?? cashier.id, ''),
     cashierName: toString(item.cashierName ?? cashier.name, ''),
     note: typeof item.note === 'string' ? item.note : undefined,
     items: toCollection(item.items).map(normalizeSaleItem),

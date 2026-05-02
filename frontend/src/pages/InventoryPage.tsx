@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useProducts, useCategories, useCreateProduct, useDeleteProduct, useAdjustProductStock, useCreateCategory } from '../features/products/hooks'
 import { formatCurrency } from '../lib/utils/currency'
+import { mapApiError } from '../lib/api/error'
 import type { Product, Category } from '../lib/types/domain'
 
 export function InventoryPage() {
@@ -33,6 +34,7 @@ export function InventoryPage() {
     stock: '',
     lowStockThreshold: '10',
   })
+  const [createProductError, setCreateProductError] = useState<string | null>(null)
 
   const filteredProducts = useMemo(() => {
     if (!products) return []
@@ -48,6 +50,7 @@ export function InventoryPage() {
 
   const handleCreateProduct = async () => {
     if (!formData.name || !formData.categoryId || !formData.sellingPrice) return
+    setCreateProductError(null)
     try {
       await createProduct.mutateAsync({
         name: formData.name,
@@ -60,6 +63,8 @@ export function InventoryPage() {
       setShowCreateModal(false)
       setFormData({ name: '', barcode: '', categoryId: '', sellingPrice: '', stock: '', lowStockThreshold: '10' })
     } catch (error) {
+      const errorMessage = mapApiError(error)
+      setCreateProductError(errorMessage)
       console.error('Failed to create product:', error)
     }
   }
@@ -127,7 +132,10 @@ export function InventoryPage() {
             Add Category
           </button>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              setShowCreateModal(true)
+              setCreateProductError(null)
+            }}
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
           >
             Add Product
@@ -306,10 +314,18 @@ export function InventoryPage() {
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
                 />
               </div>
+              {createProductError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                  <p className="text-sm text-red-600">{createProductError}</p>
+                </div>
+              )}
             </div>
             <div className="mt-6 flex gap-2">
               <button
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => {
+                  setShowCreateModal(false)
+                  setCreateProductError(null)
+                }}
                 className="flex-1 rounded-lg border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 Cancel

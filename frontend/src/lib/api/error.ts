@@ -6,6 +6,7 @@ const errorByCode: Record<string, string> = {
   INVALID_CREDENTIALS: 'Invalid credentials. Please check your email and password.',
   FORBIDDEN: 'You are not allowed to perform this action.',
   VALIDATION_ERROR: 'Some fields are invalid. Please review your input and try again.',
+  P2002: 'A product with this barcode already exists. Please use a different barcode.',
 }
 
 type ApiErrorBody = {

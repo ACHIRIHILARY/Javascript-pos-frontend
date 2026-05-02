@@ -18,6 +18,7 @@ export type Product = {
   id: string
   name: string
   barcode?: string | null
+  qrCodeValue?: string | null
   categoryId?: string | null
   category?: Category | string | null
   sellingPrice: number
