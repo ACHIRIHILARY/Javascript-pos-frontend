@@ -1,10 +1,10 @@
 import { useState, useMemo, useCallback } from 'react'
-import { Link } from 'react-router-dom'
 import { useProducts } from '../features/products/hooks'
 import { useCreateSale } from '../features/sales/hooks'
 import { formatCurrency } from '../lib/utils/currency'
-import type { Product } from '../lib/types/domain'
-import type { PaymentMethod, CreateSalePayload } from '../features/sales/api'
+import type { Product, PaymentMethod } from '../lib/types/domain'
+import type { CreateSalePayload } from '../features/sales/api'
+import { QRScannerModal } from '../components/QRScannerModal'
 
 type CartItem = {
   product: Product
@@ -21,6 +21,9 @@ export function POSPage() {
   const [lastSale, setLastSale] = useState<{ id: string; total: number; items: CartItem[] } | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH')
   const [note, setNote] = useState('')
+  const [showScanner, setShowScanner] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
+  const [showConfirmCheckout, setShowConfirmCheckout] = useState(false)
 
   const filteredProducts = useMemo(() => {
     if (!products) return []
@@ -75,7 +78,9 @@ export function POSPage() {
 
   const handleCheckout = async () => {
     if (cart.length === 0) return
-    
+
+    setShowConfirmCheckout(false)
+
     const payload: CreateSalePayload = {
       items: cart.map((item) => ({
         productId: item.product.id,
@@ -100,6 +105,32 @@ export function POSPage() {
       console.error('Checkout failed:', error)
     }
   }
+
+  const handleConfirmCheckout = () => {
+    if (cart.length === 0) return
+    setShowConfirmCheckout(true)
+  }
+
+  const handleQRScan = useCallback((qrCodeValue: string) => {
+    if (!products) return
+
+    const product = products.find(p => p.qrCodeValue === qrCodeValue)
+    if (product) {
+      addToCart(product)
+      setScanError(null)
+    } else {
+      setScanError(`Product not found for QR code: ${qrCodeValue}`)
+    }
+  }, [products, addToCart])
+
+  const handleScanError = useCallback((error: string) => {
+    setScanError(error)
+  }, [])
+
+  const closeScanner = useCallback(() => {
+    setShowScanner(false)
+    setScanError(null)
+  }, [])
 
   const handlePrint = () => {
     window.print()
@@ -136,13 +167,32 @@ export function POSPage() {
       <div className="flex-1 flex flex-col border-r border-slate-200">
         {/* Search Bar */}
         <div className="border-b border-slate-200 bg-white p-4">
-          <input
-            type="text"
-            placeholder="Search products by name or barcode..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-lg focus:border-slate-500 focus:outline-none"
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Search products by name or barcode..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-lg focus:border-slate-500 focus:outline-none"
+            />
+            <button
+              onClick={() => {
+                setShowScanner(true)
+                setScanError(null)
+              }}
+              className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-3 text-white hover:bg-slate-800"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 21h.01M12 7h.01M12 3h.01M21 12h.01M3 12h.01M12 21h.01M12 7h.01M12 3h.01M21 12h.01M3 12h.01" />
+              </svg>
+              Scan QR
+            </button>
+          </div>
+          {scanError && (
+            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{scanError}</p>
+            </div>
+          )}
         </div>
 
         {/* Product Grid */}
@@ -294,7 +344,7 @@ export function POSPage() {
           </div>
 
           <button
-            onClick={handleCheckout}
+            onClick={handleConfirmCheckout}
             disabled={cart.length === 0 || createSale.isPending}
             className="w-full rounded-lg bg-slate-900 py-4 text-lg font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
@@ -302,6 +352,40 @@ export function POSPage() {
           </button>
         </div>
       </div>
+
+      {showConfirmCheckout && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-semibold text-slate-900">Confirm Sale</h2>
+            <p className="mt-3 text-sm text-slate-600">
+              Are you sure you want to complete this sale for {formatCurrency(cartTotal)}?
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setShowConfirmCheckout(false)}
+                className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCheckout}
+                disabled={createSale.isPending}
+                className="flex-1 rounded-lg bg-slate-900 px-4 py-3 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                Confirm Sale
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Scanner Modal */}
+      <QRScannerModal
+        isOpen={showScanner}
+        onClose={closeScanner}
+        onScan={handleQRScan}
+        onError={handleScanError}
+      />
 
       {/* Receipt Modal */}
       {showReceipt && lastSale && (

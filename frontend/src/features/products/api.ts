@@ -12,6 +12,7 @@ export type ProductFilters = {
 export type ProductPayload = {
   name: string
   barcode?: string
+  qrCodeValue?: string
   categoryId: string
   sellingPrice: number
   stock: number
